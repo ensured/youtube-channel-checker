@@ -1,0 +1,15 @@
+services:
+  youtube-monitor:
+    build: .
+    container_name: youtube-monitor
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - youtube-monitor-data:/home/appuser/.config/youtube-monitor
+    env_file:
+      - .env
+    # Uncomment the line below if you want to see the logs in real-time
+    # tty: true
+
+volumes:
+  youtube-monitor-data:
