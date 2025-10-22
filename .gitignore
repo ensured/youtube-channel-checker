@@ -5,3 +5,5 @@ youtube_username_cache.json
 .youtube_config.json
 .channel_mapping.json
 test_send_email.py
+__pycache__
+.venv

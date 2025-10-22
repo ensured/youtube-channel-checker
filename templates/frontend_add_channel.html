@@ -2,24 +2,81 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Manage YouTube Channel IDs</title>
+    <title>Manage YouTube Channels</title>
     <style>
+      :root {
+        --bg-color: #f9f9f9;
+        --container-bg: #fff;
+        --text-color: #333;
+        --input-bg: #fff;
+        --input-border: #ccc;
+        --button-bg: #ff0000;
+        --button-text: #fff;
+        --channel-item-bg: #fff;
+        --channel-item-hover: #f9f9f9;
+        --channel-item-border: #eeeeee;
+        --error-color: #d32f2f;
+        --error-bg: #ffebee;
+        --success-color: #2e7d32;
+        --success-bg: #e8f5e8;
+        --loading-overlay: rgba(0, 0, 0, 0.3);
+        --loading-content-bg: #fff;
+        --border-color: #ddd;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --username-color: #333;
+        --channel-id-bg: #f5f5f5;
+        --channel-id-color: #666;
+        --channel-id-border: #e0e0e0;
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #1a1a1a;
+        --container-bg: #2d2d2d;
+        --text-color: #e0e0e0;
+        --input-bg: #3a3a3a;
+        --input-border: #555;
+        --button-bg: #ff0000;
+        --button-text: #fff;
+        --channel-item-bg: #3a3a3a;
+        --channel-item-hover: #444;
+        --channel-item-border: #555;
+        --error-color: #ff6b6b;
+        --error-bg: #2d1b1b;
+        --success-color: #4caf50;
+        --success-bg: #1b2d1b;
+        --loading-overlay: rgba(0, 0, 0, 0.5);
+        --loading-content-bg: #2d2d2d;
+        --border-color: #555;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --username-color: #e0e0e0;
+        --channel-id-bg: #444;
+        --channel-id-color: #ccc;
+        --channel-id-border: #666;
+      }
       body {
         font-family: Arial, sans-serif;
-        background: #f9f9f9;
+        background: var(--bg-color);
+        color: var(--text-color);
         padding: 40px;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
       .container {
-        background: #fff;
-        padding: 30px;
+        background: var(--container-bg);
+        padding: 40px 45px 30px 30px;
         border-radius: 8px;
         max-width: 400px;
         margin: auto;
-        box-shadow: 0 2px 8px #0001;
-        border: 1px #333 solid;
+        box-shadow: 0 2px 8px var(--shadow-color);
+        border: 1px var(--border-color) solid;
+        transition: background-color 0.3s ease, border-color 0.3s ease,
+          box-shadow 0.3s ease;
+        position: relative;
       }
       h2 {
-        color: #ff1e1e;
+        color: var(--button-bg);
+        transition: color 0.3s ease;
+        margin-top: 0;
+        margin-bottom: 20px;
       }
       input,
       button {
@@ -27,14 +84,20 @@
         margin: 10px 0;
         width: 100%;
         border-radius: 4px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--input-border);
+        transition: border-color 0.3s ease, background-color 0.3s ease;
+      }
+      input {
+        background: var(--input-bg);
+        color: var(--text-color);
       }
       button {
-        background: #ff0000;
-        color: #fff;
+        background: var(--button-bg);
+        color: var(--button-text);
         border: none;
         font-weight: bold;
         cursor: pointer;
+        transition: background-color 0.3s ease;
       }
       .success {
         color: green;
@@ -45,22 +108,15 @@
       ul {
         padding-left: 20px;
       }
-      .channel-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 5px;
-        gap: 1rem;
-      }
-
       #channelList {
         list-style: none;
         padding: 0;
         margin: 0;
-        background-color: #ffffff;
-        border: 1px solid #dddddd;
+        background-color: var(--channel-item-bg);
+        border: 1px solid var(--border-color);
         border-radius: 4px;
         overflow: hidden;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
       }
 
       .channel-item {
@@ -68,11 +124,13 @@
         justify-content: space-between;
         align-items: center;
         padding: 10px 15px;
-        border-bottom: 1px solid #eeeeee;
+        border-bottom: 1px solid var(--channel-item-border);
         font-family: Arial, sans-serif;
         font-size: 14px;
-        color: #333333;
+        color: var(--text-color);
         transition: background-color 0.2s ease;
+        gap: 1rem;
+        background-color: var(--channel-item-bg);
       }
 
       .channel-item:last-child {
@@ -80,63 +138,215 @@
       }
 
       .channel-item:hover {
-        background-color: #f9f9f9;
-      }
-
-      .channel-id {
-        flex: 1;
+        background-color: var(--channel-item-hover);
       }
 
       .remove-btn {
         font-size: 12px;
         padding: 4px 8px;
-        background-color: #f0f0f0;
-        border: 1px solid #cccccc;
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
         border-radius: 4px;
-        color: #666666;
+        color: var(--text-color);
         cursor: pointer;
-        transition: background-color 0.2s ease, color 0.2s ease;
+        transition: background-color 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease;
         max-width: 6rem;
       }
 
       .remove-btn:hover {
-        background-color: #e0e0e0;
-        color: #333333;
+        background-color: var(--channel-item-hover);
+        color: var(--button-bg);
+        border-color: var(--button-bg);
       }
 
-      .remove-btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      .channel-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .username {
+        font-weight: bold;
+        color: var(--username-color);
+        transition: color 0.3s ease;
+      }
+
+      .loading {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--loading-overlay);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        transition: background-color 0.3s ease;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--channel-item-border);
+        border-top: 4px solid var(--button-bg);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        transition: border-color 0.3s ease;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-content {
+        background: var(--loading-content-bg);
+        color: var(--text-color);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px var(--shadow-color);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        transition: background-color 0.3s ease, color 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+
+      .channel-id {
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--channel-id-color);
+        background: var(--channel-id-bg);
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid var(--channel-id-border);
+        transition: color 0.3s ease, background-color 0.3s ease,
+          border-color 0.3s ease;
+      }
+
+      .theme-toggle {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 50px;
+        padding: 8px;
+        cursor: pointer;
+        color: var(--text-color);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+
+      .theme-toggle:hover {
+        background: var(--channel-item-hover);
+        border-color: var(--button-bg);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+      }
+
+      .theme-toggle:active {
+        transform: translateY(0);
+        transition-duration: 0.1s;
+      }
+
+      h3 {
+        color: var(--text-color);
+        transition: color 0.3s ease;
+        margin-bottom: 10px;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h2>Manage YouTube Channel IDs</h2>
-      <input type="text" id="channelIdInput" placeholder="@username or channel ID (e.g. UC123456789...)" />
-      <button onclick="addChannelId()">Add Channel ID</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Switch to dark mode">
+        🌙
+      </button>
+      <h2>Manage YouTube Channels</h2>
+      <input
+        type="text"
+        id="channelIdInput"
+        placeholder="@username or channel ID (e.g. UC123456789...)"
+      />
+      <button onclick="addChannelId()">Add Channel</button>
       <div id="result"></div>
-      <h3>Current Channels</h3>
+      <h3>Current Channels (Username & ID)</h3>
       <ul id="channelList"></ul>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading channels...</div>
+      </div>
     </div>
     <script>
       function fetchChannelIds() {
+        // Show loading spinner
+        document.getElementById("loading").style.display = "flex";
+        document.getElementById("channelList").style.opacity = "0.5";
+
         fetch("/get_channels")
           .then((res) => res.json())
           .then((data) => {
             const list = document.getElementById("channelList");
             list.innerHTML = "";
-            (data.channels || []).forEach((channel) => {
-              const li = document.createElement("li");
-              li.className = "channel-item";
-              li.setAttribute("data-channel-id", channel.id);
-              li.setAttribute("data-display-name", channel.display_name);
-              li.innerHTML = `<span class="channel-id">${channel.display_name}</span> <button class="remove-btn" onclick="removeChannelId('${channel.display_name}')">Remove</button>`;
-              list.appendChild(li);
-            });
+
+            if (data.channels && data.channels.length > 0) {
+              (data.channels || []).forEach((channel) => {
+                const li = document.createElement("li");
+                li.className = "channel-item";
+                li.setAttribute("data-channel-id", channel.id);
+                li.setAttribute("data-display-name", channel.display_name);
+                li.innerHTML = `
+                  <div class="channel-info">
+                    <span class="username">${channel.display_name}</span>
+                    <span class="channel-id">${channel.id}</span>
+                  </div>
+                  <button class="remove-btn" onclick="removeChannelId('${channel.display_name}')">Remove</button>
+                `;
+                list.appendChild(li);
+              });
+            } else {
+              list.innerHTML =
+                '<li style="color: var(--text-color); padding: 20px; text-align: center; font-style: italic; background: var(--channel-item-bg); border: 1px solid var(--border-color); border-radius: 4px; margin: 10px 0;">No channels found. Add some channels above!</li>';
+            }
           })
           .catch((error) => {
             console.error("Error fetching channel IDs:", error);
+            const list = document.getElementById("channelList");
+            list.innerHTML = `
+              <li style="color: var(--error-color); padding: 20px; text-align: center; background: var(--error-bg); border: 1px solid var(--error-color); border-radius: 4px; margin: 10px 0;">
+                <strong>Failed to load channels</strong><br>
+                <small style="color: var(--text-color); opacity: 0.7;">${
+                  error.message || "Network error occurred"
+                }</small><br>
+                <button onclick="fetchChannelIds()" style="margin-top: 10px; padding: 6px 12px; background: var(--button-bg); color: var(--button-text); border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Retry</button>
+              </li>
+            `;
+          })
+          .finally(() => {
+            // Hide loading spinner
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("channelList").style.opacity = "1";
           });
       }
       function addChannelId() {
@@ -167,7 +377,13 @@
               li.className = "channel-item";
               li.setAttribute("data-channel-id", data.channel_id);
               li.setAttribute("data-display-name", channelId);
-              li.innerHTML = `<span class="channel-id">${channelId}</span> <button class="remove-btn" onclick="removeChannelId('${channelId}')">Remove</button>`;
+              li.innerHTML = `
+                <div class="channel-info">
+                  <span class="username">${channelId}</span>
+                  <span class="channel-id">${data.channel_id}</span>
+                </div>
+                <button class="remove-btn" onclick="removeChannelId('${channelId}')">Remove</button>
+              `;
               list.appendChild(li);
               document.getElementById("channelIdInput").value = "";
             } else {
@@ -212,6 +428,35 @@
             resultDiv.innerHTML = '<span class="error">Network error.</span>';
           });
       }
+      // Theme toggle functionality
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+        document.documentElement.setAttribute("data-theme", newTheme);
+        localStorage.setItem("theme", newTheme);
+
+        // Update button icon and title
+        const button = document.querySelector(".theme-toggle");
+        button.textContent = newTheme === "dark" ? "☀️" : "🌙";
+        button.title = `Switch to ${newTheme === "dark" ? "light" : "dark"} mode`;
+      }
+
+      function initTheme() {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+
+        // Update button icon and title
+        const button = document.querySelector(".theme-toggle");
+        if (button) {
+          button.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+          button.title = `Switch to ${savedTheme === "dark" ? "light" : "dark"} mode`;
+        }
+      }
+
+      // Initialize theme on page load
+      document.addEventListener("DOMContentLoaded", initTheme);
+
       // Fetch on load
       fetchChannelIds();
     </script>
