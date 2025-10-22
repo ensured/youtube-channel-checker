@@ -113,10 +113,10 @@
   <body>
     <div class="container">
       <h2>Manage YouTube Channel IDs</h2>
-      <input type="text" id="channelIdInput" placeholder="e.g. @joeybadass" />
+      <input type="text" id="channelIdInput" placeholder="@username or channel ID (e.g. UC123456789...)" />
       <button onclick="addChannelId()">Add Channel ID</button>
       <div id="result"></div>
-      <h3>Current Channel IDs</h3>
+      <h3>Current Channels</h3>
       <ul id="channelList"></ul>
     </div>
     <script>
@@ -126,11 +126,12 @@
           .then((data) => {
             const list = document.getElementById("channelList");
             list.innerHTML = "";
-            (data.channel_ids || []).forEach((id) => {
+            (data.channels || []).forEach((channel) => {
               const li = document.createElement("li");
               li.className = "channel-item";
-              li.setAttribute("data-channel-id", id);
-              li.innerHTML = `<span class="channel-id">${id}</span> <button class="remove-btn" onclick="removeChannelId('${id}')">Remove</button>`;
+              li.setAttribute("data-channel-id", channel.id);
+              li.setAttribute("data-display-name", channel.display_name);
+              li.innerHTML = `<span class="channel-id">${channel.display_name}</span> <button class="remove-btn" onclick="removeChannelId('${channel.display_name}')">Remove</button>`;
               list.appendChild(li);
             });
           })
@@ -164,8 +165,9 @@
               const list = document.getElementById("channelList");
               const li = document.createElement("li");
               li.className = "channel-item";
-              li.setAttribute("data-channel-id", channelId);
-              li.innerHTML = `<span>${channelId}</span> <button class="remove-btn" onclick="removeChannelId('${channelId}')">Remove</button>`;
+              li.setAttribute("data-channel-id", data.channel_id);
+              li.setAttribute("data-display-name", channelId);
+              li.innerHTML = `<span class="channel-id">${channelId}</span> <button class="remove-btn" onclick="removeChannelId('${channelId}')">Remove</button>`;
               list.appendChild(li);
               document.getElementById("channelIdInput").value = "";
             } else {
@@ -179,12 +181,12 @@
             resultDiv.innerHTML = '<span class="error">Network error.</span>';
           });
       }
-      function removeChannelId(channelId) {
+      function removeChannelId(displayName) {
         const resultDiv = document.getElementById("result");
         fetch("/remove_channel", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ channel_id: channelId }),
+          body: JSON.stringify({ channel_id: displayName }),
         })
           .then((res) => res.json())
           .then((data) => {
@@ -196,7 +198,7 @@
               // Remove from UI immediately
               const list = document.getElementById("channelList");
               const li = list.querySelector(
-                `li[data-channel-id='${channelId}']`
+                `li[data-display-name='${displayName}']`
               );
               if (li) list.removeChild(li);
             } else {

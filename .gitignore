@@ -2,4 +2,6 @@
 youtube_api_cache.json
 channel_states.json
 youtube_username_cache.json
+.youtube_config.json
+.channel_mapping.json
 test_send_email.py
