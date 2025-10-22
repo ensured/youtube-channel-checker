@@ -3,6 +3,8 @@ services:
     build: .
     container_name: youtube-monitor
     restart: unless-stopped
+    ports:
+      - "5000:5000" # Map container port 5000 to host port 5000
     volumes:
       - ./:/app
       - youtube-monitor-data:/home/appuser/.config/youtube-monitor

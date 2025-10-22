@@ -32,7 +32,6 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    YOUTUBE_API_KEY=your_youtube_api_key_here
    RESEND_API_KEY=your_resend_api_key_here
    NOTIFICATION_EMAIL=your_email@example.com
-   CHECK_INTERVAL=3600
    ```
 
 3. **Install dependencies**
@@ -67,7 +66,6 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    YOUTUBE_API_KEY=your_youtube_api_key_here
    RESEND_API_KEY=your_resend_api_key_here
    NOTIFICATION_EMAIL=your_email@example.com
-   CHECK_INTERVAL=3600
    ```
 
 2. **Add channels** via the web interface at `http://localhost:5000`

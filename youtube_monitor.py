@@ -9,6 +9,7 @@ load_dotenv()
 # Import our modular services
 from config import config
 from monitoring import monitor_service
+from notifications import notification_service
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -97,8 +98,58 @@ def get_channels():
 
     return jsonify({'channels': channels})
 
+@app.route('/test_notification', methods=['GET', 'POST'])
+def test_notification():
+    """Send a test notification email."""
+    if not notification_service.is_configured:
+        return jsonify({'error': 'Notification service not configured'}), 400
 
-@app.route('/reload_channels', methods=['POST'])
+    # Send a test notification
+    test_video = {
+        'title': 'YouTube Monitor Test',
+        'url': 'https://youtube.com',
+        'published_at': datetime.now().isoformat()
+    }
+
+    success = notification_service.send_video_notification('Test Channel', test_video)
+
+    if success:
+        return jsonify({'status': 'success', 'message': 'Test notification sent'})
+    else:
+        return jsonify({'error': 'Failed to send test notification'}), 500
+
+
+@app.route('/test_multiple_notifications', methods=['GET', 'POST'])
+def test_multiple_notifications():
+    """Send a test notification email for multiple videos."""
+    if not notification_service.is_configured:
+        return jsonify({'error': 'Notification service not configured'}), 400
+
+    # Send test notifications for multiple videos
+    test_videos = [
+        {
+            'title': 'Test Video 1 - Latest Upload',
+            'url': 'https://youtube.com/watch?v=test1',
+            'published_at': datetime.now().isoformat()
+        },
+        {
+            'title': 'Test Video 2 - Recent Upload',
+            'url': 'https://youtube.com/watch?v=test2',
+            'published_at': datetime.now().isoformat()
+        },
+        {
+            'title': 'Test Video 3 - Another Upload',
+            'url': 'https://youtube.com/watch?v=test3',
+            'published_at': datetime.now().isoformat()
+        }
+    ]
+
+    success = notification_service.send_multiple_videos_notification('Test Channel', test_videos)
+
+    if success:
+        return jsonify({'status': 'success', 'message': f'Test notification sent for {len(test_videos)} videos'})
+    else:
+        return jsonify({'error': 'Failed to send test notification'}), 500
 def reload_channels():
     """Reload channels from channels_watching.json file."""
     old_count = len(config.channels)
@@ -133,5 +184,6 @@ if __name__ == "__main__":
     print("Starting YouTube Channel Monitor...")
     print(f"Monitoring {len(config.get_channel_ids())} channels")
     print(f"Check interval: {config.check_interval} seconds")
+    print(f"Notifications configured: {'Yes' if notification_service.is_configured else 'No - check RESEND_API_KEY and NOTIFICATION_EMAIL'}")
 
-    app.run(port=5000, use_reloader=True)
+    app.run(host='0.0.0.0', port=5000, use_reloader=True)

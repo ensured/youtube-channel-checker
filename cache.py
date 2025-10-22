@@ -18,6 +18,9 @@ class Cache:
         """Check if a cached timestamp has expired."""
         try:
             cached_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+            # If TTL is 0, never expire
+            if self.ttl_seconds == 0:
+                return False
             return datetime.now() - cached_time > timedelta(seconds=self.ttl_seconds)
         except ValueError:
             return True  # If parsing fails, treat as expired
@@ -98,5 +101,5 @@ class Cache:
 
 
 # Global cache instances
-youtube_cache = Cache('youtube_api_cache.json', 'youtube_api_cache.lock', 1800)  # 30 minutes
+youtube_cache = Cache('youtube_api_cache.json', 'youtube_api_cache.lock', 60)  # 30 minutes
 state_cache = Cache('channel_states.json', 'channel_states.lock', 0)  # No TTL for states

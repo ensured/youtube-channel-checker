@@ -14,7 +14,7 @@ class Config:
         self.youtube_api_key = os.getenv('YOUTUBE_API_KEY')
         self.resend_api_key = os.getenv('RESEND_API_KEY')
         self.notification_email = os.getenv('NOTIFICATION_EMAIL')
-        self.check_interval = int(os.getenv('CHECK_INTERVAL', '3600'))
+        self.check_interval = int(os.getenv('CHECK_INTERVAL', 1800))
         self.channels_file = 'channels_watching.json'
         self.channels = self._load_channels()
 

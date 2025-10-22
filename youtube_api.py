@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import pytz
@@ -70,8 +70,9 @@ class YouTubeAPI:
             # Get the uploads playlist ID for latest video
             uploads_playlist_id = channel_data['contentDetails']['relatedPlaylists']['uploads']
 
-            # Get latest video
+            # Get latest video and recent videos
             latest_video = self._get_latest_video(uploads_playlist_id, channel_id)
+            recent_videos = self.get_recent_videos(uploads_playlist_id, channel_id, 10)
 
             return {
                 'id': channel_id,
@@ -81,6 +82,7 @@ class YouTubeAPI:
                 'subscriber_count': statistics.get('subscriberCount', '0'),
                 'video_count': statistics.get('videoCount', '0'),
                 'latest_video': latest_video,
+                'recent_videos': recent_videos,  # Add recent videos
                 'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
 
@@ -88,29 +90,110 @@ class YouTubeAPI:
             print(f"Error fetching channel info: {e}")
             return None
 
+    def get_multiple_channels_info(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Get comprehensive information for multiple channels in one API call."""
+        if not self.youtube:
+            return {}
+
+        try:
+            # YouTube API allows up to 50 channel IDs in one request
+            response = self.youtube.channels().list(
+                part='snippet,contentDetails,statistics',
+                id=','.join(channel_ids)  # Join IDs with commas
+            ).execute()
+
+            channels_info = {}
+            if not response.get('items'):
+                return {}
+
+            for channel_data in response['items']:
+                channel_id = channel_data['id']
+                snippet = channel_data['snippet']
+                statistics = channel_data['statistics']
+
+                # Get the uploads playlist ID
+                uploads_playlist_id = channel_data['contentDetails']['relatedPlaylists']['uploads']
+
+                # Get recent videos for this channel
+                recent_videos = self.get_recent_videos(uploads_playlist_id, channel_id, 10)
+
+                channels_info[channel_id] = {
+                    'id': channel_id,
+                    'title': snippet['title'],
+                    'description': snippet['description'][:200] + '...' if len(snippet['description']) > 200 else snippet['description'],
+                    'thumbnail': snippet['thumbnails']['default']['url'],
+                    'subscriber_count': statistics.get('subscriberCount', '0'),
+                    'video_count': statistics.get('videoCount', '0'),
+                    'recent_videos': recent_videos,
+                    'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+
+            return channels_info
+
+        except HttpError as e:
+            print(f"Error fetching multiple channels info: {e}")
+            return {}
+
     def _get_latest_video(self, uploads_playlist_id: str, channel_id: str) -> Optional[Dict[str, Any]]:
         """Get the latest video from uploads playlist."""
         try:
             response = self.youtube.playlistItems().list(
                 part='snippet',
                 playlistId=uploads_playlist_id,
-                maxResults=1
+                maxResults=10  # Get up to 10 recent videos
             ).execute()
 
             if not response.get('items'):
                 return None
 
+            # Return the most recent video for basic functionality
             video = response['items'][0]['snippet']
             return {
                 'id': video['resourceId']['videoId'],
                 'title': video['title'],
+                'description': video.get('description', '')[:150] + '...' if len(video.get('description', '')) > 150 else video.get('description', ''),
                 'published_at': video['publishedAt'],
-                'url': f"https://www.youtube.com/watch?v={video['resourceId']['videoId']}"
+                'url': f"https://www.youtube.com/watch?v={video['resourceId']['videoId']}",
+                'thumbnail': video['thumbnails']['medium']['url'] if 'thumbnails' in video else '',
+                'channel_title': video.get('channelTitle', ''),
+                'channel_id': channel_id
             }
 
         except HttpError as e:
             print(f"Error fetching latest video for channel {channel_id}: {e}")
             return None
+
+    def get_recent_videos(self, uploads_playlist_id: str, channel_id: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """Get multiple recent videos from uploads playlist."""
+        try:
+            response = self.youtube.playlistItems().list(
+                part='snippet',
+                playlistId=uploads_playlist_id,
+                maxResults=min(max_results, 50)  # YouTube API limit is 50
+            ).execute()
+
+            if not response.get('items'):
+                return []
+
+            videos = []
+            for item in response['items']:
+                video = item['snippet']
+                videos.append({
+                    'id': video['resourceId']['videoId'],
+                    'title': video['title'],
+                    'description': video.get('description', '')[:150] + '...' if len(video.get('description', '')) > 150 else video.get('description', ''),
+                    'published_at': video['publishedAt'],
+                    'url': f"https://www.youtube.com/watch?v={video['resourceId']['videoId']}",
+                    'thumbnail': video['thumbnails']['medium']['url'] if 'thumbnails' in video else '',
+                    'channel_title': video.get('channelTitle', ''),
+                    'channel_id': channel_id
+                })
+
+            return videos
+
+        except HttpError as e:
+            print(f"Error fetching recent videos for channel {channel_id}: {e}")
+            return []
 
     def format_notification_date(self, published_at: str) -> str:
         """Format published date for notifications."""
