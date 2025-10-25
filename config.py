@@ -2,14 +2,13 @@ import json
 import os
 from typing import List, Tuple, Dict
 from dotenv import load_dotenv
-
 # Load environment variables
 load_dotenv()
 
 
 class Config:
     """Configuration management with channels loaded from JSON file."""
-
+    APP_PASSWORD = os.getenv('PASSWORD')
     def __init__(self):
         self.youtube_api_key = os.getenv('YOUTUBE_API_KEY')
         self.resend_api_key = os.getenv('RESEND_API_KEY')
@@ -20,6 +19,7 @@ class Config:
         self.discord_webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         self.channels_file = 'channels_watching.json'
         self.channels = self._load_channels()
+
 
     def _load_channels(self) -> Dict[str, str]:
         """Load channels from channels_watching.json file."""
@@ -43,7 +43,9 @@ class Config:
         except IOError as e:
             print(f"Error saving channels to {self.channels_file}: {e}")
             return False
-
+    def is_configured(self) -> bool:
+        """Check if the configuration is valid."""
+        return self.youtube_api_key and self.get_channel_ids() and self.APP_PASSWORD
     def get_channel_ids(self) -> List[str]:
         """Get channel IDs from the dictionary values."""
         channel_ids = []
@@ -144,5 +146,8 @@ class Config:
         self.channels[new_identifier] = self.channels.pop(old_identifier)
         self._save_channels()
         return True
+    def reload_channels(self):
+        """Reload channels from the JSON file."""
+        self.channels = self._load_channels()
 
 config = Config()

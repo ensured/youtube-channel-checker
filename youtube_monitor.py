@@ -3,6 +3,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from dotenv import load_dotenv
 import json
+from config import config
+from monitoring import monitor_service
+from notifications import notification_service
+
 # Load environment variables
 load_dotenv()
 
@@ -10,9 +14,6 @@ load_dotenv()
 APP_PASSWORD = os.getenv('PASSWORD')
 
 # Import our modular services
-from config import config
-from monitoring import monitor_service
-from notifications import notification_service
 
 # Initialize Flask app
 app = Flask(__name__)
