@@ -4,3 +4,5 @@ resend==2.13.0
 Flask==3.0.0
 filelock==3.13.1
 pytz==2023.3
+discord.py==2.3.2
+requests==2.31.0

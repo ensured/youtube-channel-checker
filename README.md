@@ -1,11 +1,13 @@
 # YouTube Channel Monitor
 
-A Flask web application that monitors YouTube channels for new videos and sends email notifications when new content is published.
+A Flask web application that monitors YouTube channels for new videos and sends email and Discord notifications when new content is published.
 
 ## Features
 
 - 🎬 Monitor multiple YouTube channels for new videos
 - 📧 Email notifications for new videos (using Resend)
+- 💬 Discord notifications via webhooks
+- 🤖 Discord bot for channel management
 - 💾 Persistent caching with TTL (Time To Live)
 - 🕐 Background monitoring with configurable intervals
 - 🌐 Web interface for managing channel subscriptions
@@ -32,6 +34,8 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    YOUTUBE_API_KEY=your_youtube_api_key_here
    RESEND_API_KEY=your_resend_api_key_here
    NOTIFICATION_EMAIL=your_email@example.com
+   DISCORD_BOT_TOKEN=your_discord_bot_token_here
+   DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
    ```
 
 3. **Install dependencies**
@@ -42,9 +46,8 @@ A Flask web application that monitors YouTube channels for new videos and sends 
 
 4. **Run the application**
 
-   ```bash
-   python youtube_monitor.py
-   ```
+   - Main app: `python youtube_monitor.py`
+   - Discord bot (in a separate terminal): `python discord_bot.py`
 
 5. **Access the web interface**
    Open your browser to `http://localhost:5000`
@@ -57,6 +60,8 @@ A Flask web application that monitors YouTube channels for new videos and sends 
 | `RESEND_API_KEY`     | Resend API key for notifications          | Yes      |
 | `NOTIFICATION_EMAIL` | Email address for notifications           | Yes      |
 | `CHECK_INTERVAL`     | Check interval in seconds (default: 3600) | No       |
+| `DISCORD_BOT_TOKEN`  | Discord bot token for bot commands        | No       |
+| `DISCORD_WEBHOOK_URL`| Discord webhook URL for notifications     | No       |
 
 ### Initial Setup
 
@@ -66,13 +71,39 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    YOUTUBE_API_KEY=your_youtube_api_key_here
    RESEND_API_KEY=your_resend_api_key_here
    NOTIFICATION_EMAIL=your_email@example.com
+   DISCORD_BOT_TOKEN=your_discord_bot_token_here  # Optional
+   DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...  # Optional
    ```
 
 2. **Add channels** via the web interface at `http://localhost:5000`
    - Use usernames like `@joeybadass` or channel IDs like `UC123456789...`
    - The system will automatically convert and store them internally
 
-### Channel Management
+### Discord Integration
+
+1. **Set up Discord Bot** (for commands):
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Create a new application, then add a bot user
+   - Copy the bot token and add to `.env` as `DISCORD_BOT_TOKEN`
+   - Invite the bot to your server with permissions: **applications.commands** (for slash commands), **Send Messages**, and **Read Message History**
+   - To invite, use the OAuth2 URL generator in the Developer Portal with bot scope and the above permissions
+
+   **Note**: If slash commands don't appear immediately, it can take up to 1 hour for global sync. For faster testing in a specific server, uncomment the guild sync code in `discord_bot.py` and replace `YOUR_GUILD_ID` with your server's ID (enable Developer Mode in Discord, right-click server > Copy ID).
+
+2. **Set up Discord Webhook** (for notifications):
+   - In your Discord server, create a webhook in the desired channel
+   - Copy the webhook URL and add to `.env` as `DISCORD_WEBHOOK_URL`
+
+3. **Run the Discord Bot** (in a separate terminal):
+   ```bash
+   python discord_bot.py
+   ```
+
+   **Discord Bot Commands:**
+   - `/add_channel <username_or_id>` - Add a channel to monitor
+   - `/remove_channel <identifier>` - Remove a channel
+   - `/list_channels` - List monitored channels
+   - `/update_username <old_identifier> <new_identifier>` - Update a channel's username
 
 Channels are now stored internally in `.youtube_config.json` rather than in environment variables. This provides:
 
@@ -115,12 +146,14 @@ The application is organized into modular components:
 - **`config.py`** - Configuration management and environment variable handling
 - **`cache.py`** - Unified caching system with TTL support
 - **`youtube_api.py`** - YouTube API interactions with optimized calls
-- **`notifications.py`** - Email notification service
+- **`notifications.py`** - Email and Discord notification service
 - **`monitoring.py`** - Background monitoring service
+- **`discord_bot.py`** - Discord bot for channel management and commands
 - **`youtube_monitor.py`** - Main Flask application and web routes
 
 ## Recent Improvements
 
+- ✅ **Discord Integration**: Added bot commands for channel management and webhook notifications
 - ✅ **Modular Architecture**: Code separated into focused modules
 - ✅ **Unified Caching**: Single cache system replacing duplicate code
 - ✅ **Optimized API Calls**: Reduced YouTube API requests through better caching
@@ -192,12 +225,26 @@ If you had the old version running, you can safely delete these files:
 3. Add the key to your `.env` file
 4. Verify your domain for better deliverability
 
+## Getting Discord Bot Token
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application and add a bot user
+3. Copy the bot token from the Bot section
+4. Add the token to your `.env` file as `DISCORD_BOT_TOKEN`
+5. Invite the bot to your server with permissions for reading messages and sending messages
+
+## Getting Discord Webhook URL
+
+1. In your Discord server, go to the channel where you want notifications
+2. Click the gear icon (Edit Channel) > Integrations > Create Webhook
+3. Copy the webhook URL and add to your `.env` file as `DISCORD_WEBHOOK_URL`
+
 ## Troubleshooting
 
 **No videos found**: Check if the channel ID is correct and the channel has public videos.
 
 **API quota exceeded**: YouTube API has daily quotas. Consider increasing your check interval.
 
-**Email notifications not working**: Verify your Resend API key and notification email address.
+**Discord notifications not working**: Verify your Discord webhook URL is correct and the webhook is active.
 
-**Module import errors**: Ensure all dependencies are installed with `pip install -r requirements.txt`.
+**Discord bot not responding**: Check that the bot token is correct and the bot is invited to your server with necessary permissions.

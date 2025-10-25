@@ -15,6 +15,9 @@ class Config:
         self.resend_api_key = os.getenv('RESEND_API_KEY')
         self.notification_email = os.getenv('NOTIFICATION_EMAIL')
         self.check_interval = int(os.getenv('CHECK_INTERVAL', 1800))
+        self.discord_bot_token = os.getenv('DISCORD_BOT_TOKEN')
+        self.discord_notification_channel_id = os.getenv('DISCORD_NOTIFICATION_CHANNEL_ID')
+        self.discord_webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         self.channels_file = 'channels_watching.json'
         self.channels = self._load_channels()
 

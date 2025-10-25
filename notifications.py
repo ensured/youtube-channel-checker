@@ -1,4 +1,5 @@
 import resend
+import requests
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -11,8 +12,70 @@ class NotificationService:
 
     def __init__(self):
         self.is_configured = bool(config.resend_api_key and config.notification_email)
+        self.discord_configured = bool(config.discord_webhook_url)
         if self.is_configured:
             resend.api_key = config.resend_api_key
+
+    def send_discord_notification(self, channel_name: str, video: Dict[str, Any]) -> bool:
+        """Send Discord webhook notification for new video."""
+        if not self.discord_configured:
+            return False
+
+        try:
+            formatted_date = youtube_api.format_notification_date(video['published_at'])
+            embed = {
+                "title": f"🎬 New Video: {video['title']}",
+                "url": video['url'],
+                "color": 0xff0000,
+                "fields": [
+                    {"name": "Channel", "value": channel_name, "inline": True},
+                    {"name": "Published", "value": formatted_date, "inline": True},
+                ],
+                "thumbnail": {"url": video.get('thumbnail', '')},
+                "image": {"url": video.get('thumbnail', '')},
+                "footer": {"text": "YouTube Channel Monitor"}
+            }
+            data = {"embeds": [embed]}
+            response = requests.post(config.discord_webhook_url, json=data)
+            response.raise_for_status()
+            print(f"✅ Discord notification sent for video: {video['title']}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to send Discord notification: {str(e)}")
+            return False
+
+    def send_multiple_discord_notifications(self, channel_name: str, videos: List[Dict[str, Any]]) -> bool:
+        """Send Discord webhook notification for multiple new videos."""
+        if not self.discord_configured or not videos:
+            return False
+
+        try:
+            embeds = []
+            for video in videos[:5]:  # Limit to 5 to avoid message size limit
+                formatted_date = youtube_api.format_notification_date(video['published_at'])
+                embed = {
+                    "title": video['title'],
+                    "url": video['url'],
+                    "color": 0xff0000,
+                    "fields": [
+                        {"name": "Channel", "value": channel_name, "inline": True},
+                        {"name": "Published", "value": formatted_date, "inline": True},
+                    ],
+                    "thumbnail": {"url": video.get('thumbnail', '')}
+                }
+                embeds.append(embed)
+
+            data = {
+                "content": f"🎬 {len(videos)} new videos from {channel_name}!",
+                "embeds": embeds
+            }
+            response = requests.post(config.discord_webhook_url, json=data)
+            response.raise_for_status()
+            print(f"✅ Discord notification sent for {len(videos)} videos from {channel_name}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to send multiple Discord notifications: {str(e)}")
+            return False
 
     def send_video_notification(self, channel_name: str, video: Dict[str, Any]) -> bool:
         """Send notification email for new video."""
@@ -88,14 +151,18 @@ class NotificationService:
                 """
             })
             print(f"✅ Notification sent for video: {video['title']}")
-            return True
+            # Also send Discord notification if configured
+            discord_success = self.send_discord_notification(channel_name, video)
+            return True  # Email success
 
         except Exception as e:
             print(f"❌ Failed to send notification: {str(e)}")
             if hasattr(e, 'response') and hasattr(e.response, 'json'):
                 error_details = e.response.json()
                 print("Error details:", error_details)
-            return False
+            # Try Discord if email fails
+            discord_success = self.send_discord_notification(channel_name, video)
+            return discord_success
 
     def send_multiple_videos_notification(self, channel_name: str, videos: List[Dict[str, Any]]) -> bool:
         """Send notification email for multiple new videos."""
@@ -192,14 +259,18 @@ class NotificationService:
             })
 
             print(f"✅ Notification sent for {len(videos)} videos from {channel_name}")
-            return True
+            # Also send Discord notification if configured
+            discord_success = self.send_multiple_discord_notifications(channel_name, videos)
+            return True  # Email success
 
         except Exception as e:
             print(f"❌ Failed to send multiple videos notification: {str(e)}")
             if hasattr(e, 'response') and hasattr(e.response, 'json'):
                 error_details = e.response.json()
                 print("Error details:", error_details)
-            return False
+            # Try Discord if email fails
+            discord_success = self.send_multiple_discord_notifications(channel_name, videos)
+            return discord_success
 
 
 # Global notification service instance
