@@ -25,5 +25,5 @@ ENV STATE_FILE=/home/appuser/.config/youtube-monitor/channel_states.json
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Run the script
-CMD ["python", "youtube_monitor.py"]
+# Run both scripts concurrently
+CMD ["sh", "run.sh"]

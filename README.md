@@ -54,14 +54,15 @@ A Flask web application that monitors YouTube channels for new videos and sends 
 
 ## Configuration
 
-| Variable             | Description                               | Required |
-| -------------------- | ----------------------------------------- | -------- |
-| `YOUTUBE_API_KEY`    | YouTube Data API v3 key                   | Yes      |
-| `RESEND_API_KEY`     | Resend API key for notifications          | Yes      |
-| `NOTIFICATION_EMAIL` | Email address for notifications           | Yes      |
-| `CHECK_INTERVAL`     | Check interval in seconds (default: 3600) | No       |
-| `DISCORD_BOT_TOKEN`  | Discord bot token for bot commands        | No       |
-| `DISCORD_WEBHOOK_URL`| Discord webhook URL for notifications     | No       |
+| Variable                          | Description                               | Required |
+| --------------------------------- | ----------------------------------------- | -------- |
+| `YOUTUBE_API_KEY`                 | YouTube Data API v3 key                   | Yes      |
+| `RESEND_API_KEY`                  | Resend API key for notifications          | Yes      |
+| `NOTIFICATION_EMAIL`              | Email address for notifications           | Yes      |
+| `CHECK_INTERVAL`                  | Check interval in seconds (default: 3600) | No       |
+| `DISCORD_BOT_TOKEN`               | Discord bot token for bot commands        | No       |
+| `DISCORD_WEBHOOK_URL`             | Discord webhook URL for notifications     | No       |
+| `DISCORD_NOTIFICATION_CHANNEL_ID` | Discord channel ID for auto-reactions     | No       |
 
 ### Initial Setup
 
@@ -73,6 +74,7 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    NOTIFICATION_EMAIL=your_email@example.com
    DISCORD_BOT_TOKEN=your_discord_bot_token_here  # Optional
    DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...  # Optional
+   DISCORD_NOTIFICATION_CHANNEL_ID=123456789012345678  # Optional, for auto-reactions
    ```
 
 2. **Add channels** via the web interface at `http://localhost:5000`
@@ -82,6 +84,7 @@ A Flask web application that monitors YouTube channels for new videos and sends 
 ### Discord Integration
 
 1. **Set up Discord Bot** (for commands):
+
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Create a new application, then add a bot user
    - Copy the bot token and add to `.env` as `DISCORD_BOT_TOKEN`
@@ -91,19 +94,33 @@ A Flask web application that monitors YouTube channels for new videos and sends 
    **Note**: If slash commands don't appear immediately, it can take up to 1 hour for global sync. For faster testing in a specific server, uncomment the guild sync code in `discord_bot.py` and replace `YOUR_GUILD_ID` with your server's ID (enable Developer Mode in Discord, right-click server > Copy ID).
 
 2. **Set up Discord Webhook** (for notifications):
+
    - In your Discord server, create a webhook in the desired channel
    - Copy the webhook URL and add to `.env` as `DISCORD_WEBHOOK_URL`
 
-3. **Run the Discord Bot** (in a separate terminal):
+3. **Set up Discord Bot** (for commands and auto-reactions):
+
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Create a new application, then add a bot user
+   - Copy the bot token and add to `.env` as `DISCORD_BOT_TOKEN`
+   - Invite the bot to your server with permissions: **applications.commands** (for slash commands), **Send Messages**, **Read Message History**, and **Add Reactions**
+   - To invite, use the OAuth2 URL generator in the Developer Portal with bot scope and the above permissions
+   - Copy the notification channel ID (enable Developer Mode in Discord, right-click the channel > Copy ID) and add to `.env` as `DISCORD_NOTIFICATION_CHANNEL_ID` for auto-reactions
+
+4. **Run the Discord Bot** (in a separate terminal):
+
    ```bash
    python discord_bot.py
    ```
 
    **Discord Bot Commands:**
+
    - `/add_channel <username_or_id>` - Add a channel to monitor
    - `/remove_channel <identifier>` - Remove a channel
-   - `/list_channels` - List monitored channels
+   - `/list_channels` - List monitored channels (with a nice embed)
    - `/update_username <old_identifier> <new_identifier>` - Update a channel's username
+
+   **Auto-Reaction Feature**: The bot will automatically add a 🔥 reaction to all messages in the notification channel.
 
 Channels are now stored internally in `.youtube_config.json` rather than in environment variables. This provides:
 
@@ -133,11 +150,13 @@ The web interface now shows "Current Channels" with the user-friendly identifier
 
 ## Docker Support
 
-Build and run with Docker:
+Build and run with Docker (now runs both the web app and Discord bot):
 
 ```bash
 docker-compose up --build
 ```
+
+The container will run both `youtube_monitor.py` (Flask web app) and `discord_bot.py` (Discord bot) concurrently.
 
 ## Architecture
 

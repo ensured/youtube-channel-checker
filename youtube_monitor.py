@@ -64,6 +64,7 @@ def add_channel():
     from youtube_api import youtube_api
     success, result = config.convert_and_add_channel(channel_identifier, youtube_api)
     if success:
+        config.reload_channels()  # Reload to ensure consistency
         return jsonify({'status': 'success', 'channel_id': result})
     else:
         return jsonify({'error': result}), 400
@@ -76,6 +77,7 @@ def remove_channel():
     if not channel_identifier:
         return jsonify({'error': 'No channel_id provided'}), 400
     if config.remove_channel(channel_identifier):
+        config.reload_channels()  # Reload to ensure consistency
         return jsonify({'status': 'success', 'channel_id': channel_identifier})
     else:
         return jsonify({'error': 'Channel ID not found'}), 404
@@ -105,6 +107,7 @@ def get_channel_info_endpoint():
 @app.route('/get_channels', methods=['GET'])
 @login_required
 def get_channels():
+    config.reload_channels()  # Reload from file to get latest changes
     channels = []
     for identifier, channel_id in config.channels.items():
         display_name = identifier
@@ -174,6 +177,7 @@ def update_username():
     if old_username in config.channels:
         config.channels[new_username] = config.channels.pop(old_username)
         if config._save_channels():
+            config.reload_channels()  # Reload to ensure consistency
             return jsonify({'status': 'success'})
         else:
             return jsonify({'error': 'Failed to save channels'}), 500
@@ -213,4 +217,4 @@ if __name__ == "__main__":
     print(f"Monitoring {len(config.get_channel_ids())} channels")
     print(f"Check interval: {config.check_interval} seconds")
     print(f"Notifications configured: {'Yes' if notification_service.is_configured else 'No - check RESEND_API_KEY and NOTIFICATION_EMAIL'}")
-    app.run(host='0.0.0.0', port=5001, use_reloader=True)
+    app.run(host='0.0.0.0', port=5001, use_reloader=False)

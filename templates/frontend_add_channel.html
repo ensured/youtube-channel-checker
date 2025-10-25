@@ -518,46 +518,52 @@
       fetchChannelIds().then(() => {
         document.querySelectorAll(".username").forEach((username) => {
           username.contentEditable = true;
+          let debounceTimer;
           username.addEventListener("input", () => {
-            const oldUsername =
-              username.parentElement.parentElement.getAttribute(
-                "data-display-name"
-              );
-            const displayName = username.textContent.trim();
-            const channelId = username.nextElementSibling.textContent.trim();
-            const resultDiv = document.getElementById("result");
-            fetch("/update_username", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                old_username: oldUsername,
-                new_username: displayName,
-                channel_id: channelId,
-              }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.status === "success") {
-                  resultDiv.innerHTML =
-                    '<span class="success">Username updated: ' +
-                    displayName +
-                    "</span>";
-                  // Update the data attribute
-                  username.parentElement.parentElement.setAttribute(
-                    "data-display-name",
-                    displayName
-                  );
-                } else {
-                  resultDiv.innerHTML =
-                    '<span class="error">' +
-                    (data.error || "Error updating username") +
-                    "</span>";
-                }
-              })
-              .catch(() => {
-                resultDiv.innerHTML =
-                  '<span class="error">Network error.</span>';
-              });
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              const oldUsername =
+                username.parentElement.parentElement.getAttribute(
+                  "data-display-name"
+                );
+              const displayName = username.textContent.trim();
+              const channelId = username.nextElementSibling.textContent.trim();
+              const resultDiv = document.getElementById("result");
+              if (displayName && displayName !== oldUsername) {
+                fetch("/update_username", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    old_username: oldUsername,
+                    new_username: displayName,
+                    channel_id: channelId,
+                  }),
+                })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    if (data.status === "success") {
+                      resultDiv.innerHTML =
+                        '<span class="success">Username updated: ' +
+                        displayName +
+                        "</span>";
+                      // Update the data attribute
+                      username.parentElement.parentElement.setAttribute(
+                        "data-display-name",
+                        displayName
+                      );
+                    } else {
+                      resultDiv.innerHTML =
+                        '<span class="error">' +
+                        (data.error || "Error updating username") +
+                        "</span>";
+                    }
+                  })
+                  .catch(() => {
+                    resultDiv.innerHTML =
+                      '<span class="error">Network error.</span>';
+                  });
+              }
+            }, 500); // 500ms debounce delay
           });
         });
       });

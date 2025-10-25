@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import json
+from config import config
 
 # Load environment variables
 load_dotenv()
@@ -31,6 +32,13 @@ async def on_ready():
     #     bot.tree.copy_global_to(guild=guild)
     #     await bot.tree.sync(guild=guild)
     #     print(f'Synced commands to guild: {guild.name}')
+
+@bot.event
+async def on_message(message):
+    # React with 🔥 to all messages in the notification channel
+    if config.discord_notification_channel_id and message.channel.id == int(config.discord_notification_channel_id):
+        await message.add_reaction('🔥')
+        print(f'Added 🔥 reaction to message in {message.channel.name}')
 
 @bot.tree.command(name='add_channel', description='Add a YouTube channel by username or ID')
 async def add_channel(interaction: discord.Interaction, identifier: str):
@@ -83,11 +91,21 @@ async def list_channels(interaction: discord.Interaction):
         await interaction.response.send_message('No channels monitored.')
         return
 
-    message = 'Monitored channels:\n'
-    for identifier, channel_id in channels.items():
-        message += f'- {identifier} (ID: {channel_id})\n'
+    embed = discord.Embed(
+        title='📺 Monitored YouTube Channels',
+        description='Here are the channels currently being monitored:',
+        color=0xff0000
+    )
 
-    await interaction.response.send_message(message)
+    for i, (identifier, channel_id) in enumerate(channels.items(), 1):
+        embed.add_field(
+            name=f'{i}. {identifier}',
+            value=f'Channel ID: `{channel_id}`',
+            inline=False
+        )
+
+    embed.set_footer(text=f'Total: {len(channels)} channels')
+    await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name='update_username', description='Update username for a channel')
 async def update_username(interaction: discord.Interaction, old_identifier: str, new_identifier: str):

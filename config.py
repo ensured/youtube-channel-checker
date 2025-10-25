@@ -16,7 +16,7 @@ class Config:
         self.notification_email = os.getenv('NOTIFICATION_EMAIL')
         self.check_interval = int(os.getenv('CHECK_INTERVAL', 1800))
         self.discord_bot_token = os.getenv('DISCORD_BOT_TOKEN')
-        self.discord_notification_channel_id = os.getenv('DISCORD_NOTIFICATION_CHANNEL_ID')
+        self.discord_notification_channel_id = int(os.getenv('DISCORD_NOTIFICATION_CHANNEL_ID')) if os.getenv('DISCORD_NOTIFICATION_CHANNEL_ID') else None
         self.discord_webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         self.channels_file = 'channels_watching.json'
         self.channels = self._load_channels()
@@ -135,11 +135,14 @@ class Config:
             print(f"Error importing channels from JSON: {e}")
             return False
 
-    def is_configured(self) -> bool:
-        """Check if all required configuration is present."""
-        return bool(
-            self.youtube_api_key and
-            self.get_channel_ids()  # Use get_channel_ids() to get actual channel IDs
-        )
+    def update_username(self, old_identifier: str, new_identifier: str) -> bool:
+        """Update the username for a channel."""
+        if old_identifier not in self.channels:
+            return False
+
+        # Update the key in the dictionary
+        self.channels[new_identifier] = self.channels.pop(old_identifier)
+        self._save_channels()
+        return True
 
 config = Config()
