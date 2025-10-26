@@ -291,6 +291,15 @@
         align-items: center;
         gap: 12px;
         width: 100%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        padding: 4px;
+      }
+
+      .channel-artwork:hover {
+        background: var(--channel-item-hover);
+        transform: scale(1.02);
       }
 
       .channel-thumbnail {
@@ -301,6 +310,7 @@
         border: 2px solid var(--border-color);
         flex-shrink: 0;
         transition: border-color 0.3s ease, transform 0.2s ease;
+        background: var(--channel-item-bg);
       }
 
       .channel-thumbnail:hover {
@@ -387,6 +397,227 @@
         transition: color 0.3s ease;
         margin-bottom: 10px;
       }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        animation: modalFadeIn 0.3s ease;
+      }
+
+      @keyframes modalFadeIn {
+        from {
+          opacity: 0;
+          backdrop-filter: blur(0);
+        }
+        to {
+          opacity: 1;
+          backdrop-filter: blur(4px);
+        }
+      }
+
+      .modal-content {
+        background-color: var(--container-bg);
+        margin: 5% auto;
+        padding: 0;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .modal-artwork {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+      }
+
+      .modal-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--button-bg);
+        flex-shrink: 0;
+      }
+
+      .modal-title-section {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .modal-title-section h3 {
+        margin: 0 0 8px 0;
+        color: var(--text-color);
+        font-size: 20px;
+        word-break: break-word;
+      }
+
+      .modal-channel-id {
+        margin: 0;
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--channel-id-color);
+        background: var(--channel-id-bg);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--channel-id-border);
+        word-break: break-all;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: var(--text-color);
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+        flex-shrink: 0;
+      }
+
+      .modal-close:hover {
+        background-color: var(--error-color);
+        color: white;
+      }
+
+      .modal-body {
+        padding: 24px;
+      }
+
+      .modal-stats {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: var(--channel-id-color);
+        opacity: 0.8;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--text-color);
+      }
+
+      .modal-description h4 {
+        margin: 0 0 12px 0;
+        color: var(--text-color);
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .modal-description p {
+        margin: 0;
+        color: var(--text-color);
+        line-height: 1.5;
+        opacity: 0.9;
+        word-break: break-word;
+      }
+
+      /* Responsive modal */
+      @media (max-width: 768px) {
+        .modal-content {
+          width: 95%;
+          margin: 2% auto;
+          max-height: 90vh;
+        }
+
+        .modal-header {
+          padding: 16px 20px;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .modal-artwork {
+          justify-content: center;
+          text-align: center;
+        }
+
+        .modal-close {
+          align-self: flex-end;
+          position: absolute;
+          top: 12px;
+          right: 12px;
+        }
+
+        .modal-body {
+          padding: 20px;
+        }
+
+        .modal-stats {
+          justify-content: center;
+          gap: 32px;
+        }
+
+        .modal-thumbnail {
+          width: 60px;
+          height: 60px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .modal-content {
+          width: 98%;
+          margin: 1% auto;
+        }
+
+        .modal-stats {
+          flex-direction: column;
+          gap: 16px;
+          text-align: center;
+        }
+      }
     </style>
   </head>
   <body>
@@ -422,7 +653,37 @@
       <ul id="channelList"></ul>
     </div>
 
-    <!-- Loading Overlay -->
+    <!-- Channel Details Modal -->
+    <div id="channelModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-artwork">
+            <img id="modalThumbnail" src="" alt="" class="modal-thumbnail" />
+            <div class="modal-title-section">
+              <h3 id="modalTitle"></h3>
+              <p id="modalChannelId" class="modal-channel-id"></p>
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-stats">
+            <div class="stat-item">
+              <span class="stat-label">Subscribers:</span>
+              <span id="modalSubscribers" class="stat-value"></span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Videos:</span>
+              <span id="modalVideoCount" class="stat-value"></span>
+            </div>
+          </div>
+          <div class="modal-description">
+            <h4>Description</h4>
+            <p id="modalDescription"></p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="loading" class="loading">
       <div class="loading-content">
         <div class="spinner"></div>
@@ -430,6 +691,89 @@
       </div>
     </div>
     <script>
+      function openChannelModal(channelId, displayName) {
+        const modal = document.getElementById("channelModal");
+        const modalThumbnail = document.getElementById("modalThumbnail");
+        const modalTitle = document.getElementById("modalTitle");
+        const modalChannelId = document.getElementById("modalChannelId");
+        const modalSubscribers = document.getElementById("modalSubscribers");
+        const modalVideoCount = document.getElementById("modalVideoCount");
+        const modalDescription = document.getElementById("modalDescription");
+
+        // Fetch detailed channel info for the modal
+        fetch("/get_channel_info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel_ids: [channelId] }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const info = data[channelId] || {};
+            const thumbnail =
+              info.thumbnail ||
+              "https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png";
+
+            // Update modal content
+            modalThumbnail.src = thumbnail;
+            modalThumbnail.alt = info.title || displayName;
+            modalTitle.textContent = info.title || displayName;
+            modalChannelId.textContent = channelId;
+            modalSubscribers.textContent = info.subscriber_count
+              ? parseInt(info.subscriber_count).toLocaleString()
+              : "0";
+            modalVideoCount.textContent = info.video_count
+              ? parseInt(info.video_count).toLocaleString()
+              : "0";
+            modalDescription.textContent =
+              info.description || "No description available.";
+
+            // Show modal
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden"; // Prevent background scrolling
+          })
+          .catch((error) => {
+            console.error("Error loading channel details:", error);
+            // Show basic info even if API fails
+            modalThumbnail.src =
+              "https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png";
+            modalThumbnail.alt = displayName;
+            modalTitle.textContent = displayName;
+            modalChannelId.textContent = channelId;
+            modalSubscribers.textContent = "0";
+            modalVideoCount.textContent = "0";
+            modalDescription.textContent = "Unable to load channel details.";
+
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+          });
+      }
+
+      function closeModal() {
+        const modal = document.getElementById("channelModal");
+        modal.style.display = "none";
+        document.body.style.overflow = "auto"; // Restore scrolling
+      }
+
+      // Close modal when clicking outside or pressing Escape
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("channelModal")
+          .addEventListener("click", function (e) {
+            if (e.target === this) {
+              closeModal();
+            }
+          });
+
+        document.addEventListener("keydown", function (e) {
+          if (
+            e.key === "Escape" &&
+            document.getElementById("channelModal").style.display === "block"
+          ) {
+            closeModal();
+          }
+        });
+      });
+
       function fetchChannelIds() {
         // Show loading spinner
         document.getElementById("loading").style.display = "flex";
@@ -466,7 +810,9 @@
 
                 li.innerHTML = `
             <div class="channel-info">
-              <div class="channel-artwork">
+              <div class="channel-artwork" onclick="openChannelModal('${
+                channel.id
+              }', '${channel.display_name}')">
                 <img src="${thumbnail}" alt="${title}" class="channel-thumbnail" onerror="this.src='https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png'">
                 <div class="channel-details">
                   <span class="username">${channel.display_name}</span>
