@@ -55,6 +55,13 @@ def index():
         display_channels.append(identifier)
     return render_template('frontend_add_channel.html', channel_ids=display_channels)
 
+def clear_all_channel_cache():
+    """Clear cache for all channels."""
+    from cache import youtube_cache
+    # This is a simple approach - in production you might want to iterate through all keys
+    # For now, we'll just clear the entire cache
+    youtube_cache.clear()
+
 @app.route('/add_channel', methods=['POST'])
 @login_required
 def add_channel():
@@ -66,6 +73,7 @@ def add_channel():
     success, result = config.convert_and_add_channel(channel_identifier, youtube_api)
     if success:
         config.reload_channels()  # Reload to ensure consistency
+        clear_channel_cache(result)  # Clear cache for the new channel
         return jsonify({'status': 'success', 'channel_id': result})
     else:
         return jsonify({'error': result}), 400
@@ -77,11 +85,27 @@ def remove_channel():
     channel_identifier = data.get('channel_id', '').strip()
     if not channel_identifier:
         return jsonify({'error': 'No channel_id provided'}), 400
+
+    # Find the channel ID before removing
+    channel_id = None
+    for identifier, cid in config.channels.items():
+        if identifier == channel_identifier:
+            channel_id = cid or identifier
+            break
+
     if config.remove_channel(channel_identifier):
         config.reload_channels()  # Reload to ensure consistency
+        if channel_id:
+            clear_channel_cache(channel_id)  # Clear cache for the removed channel
         return jsonify({'status': 'success', 'channel_id': channel_identifier})
     else:
         return jsonify({'error': 'Channel ID not found'}), 404
+
+@app.route('/clear_cache', methods=['POST'])
+@login_required
+def clear_cache():
+    clear_all_channel_cache()
+    return jsonify({'status': 'success', 'message': 'Channel cache cleared'})
 
 @app.route('/get_channel_info', methods=['POST'])
 @login_required
@@ -91,18 +115,21 @@ def get_channel_info_endpoint():
     if not channel_ids:
         return jsonify({'error': 'No channel_ids provided'}), 400
     from youtube_api import youtube_api
-    result = {}
+
+    # Use the lightweight method for faster UI loading (no recent videos)
+    result = youtube_api.get_multiple_channels_info_light(channel_ids)
+
+    # Fill in missing channels with fallback data
     for channel_id in channel_ids:
-        info = youtube_api.get_channel_info(channel_id)
-        if info:
-            result[channel_id] = info
-        else:
+        if channel_id not in result:
             result[channel_id] = {
                 'id': channel_id,
                 'title': channel_id,
                 'thumbnail': 'https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png',
+                'subscriber_count': '0',
                 'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
+
     return jsonify(result)
 
 @app.route('/get_channels', methods=['GET'])

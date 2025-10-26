@@ -11,6 +11,8 @@
         --input-bg: #fff;
         --input-border: #ccc;
         --button-bg: #ff0000;
+        --editable-bg: #ddddddb4;
+        --editable-text: #333;
         --button-text: #fff;
         --channel-item-bg: #fff;
         --channel-item-hover: #f9f9f9;
@@ -36,6 +38,8 @@
         --input-bg: #3a3a3a;
         --input-border: #555;
         --button-bg: #ff0000;
+        --editable-bg: #3a3a3a;
+        --editable-text: #e0e0e0;
         --button-text: #fff;
         --channel-item-bg: #3a3a3a;
         --channel-item-hover: #444;
@@ -64,13 +68,15 @@
         background: var(--container-bg);
         padding: 40px 45px 30px 30px;
         border-radius: 8px;
-        max-width: 400px;
+        max-width: 900px;
         margin: auto;
         box-shadow: 0 2px 8px var(--shadow-color);
         border: 1px var(--border-color) solid;
         transition: background-color 0.3s ease, border-color 0.3s ease,
           box-shadow 0.3s ease;
         position: relative;
+        box-sizing: border-box;
+        width: 100%;
       }
       h2 {
         color: var(--button-bg);
@@ -90,6 +96,80 @@
       input {
         background: var(--input-bg);
         color: var(--text-color);
+      }
+      .remove-btn {
+        background: var(--error-color);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        opacity: 0.8;
+        min-width: fit-content;
+        white-space: nowrap;
+      }
+
+      .remove-btn:hover {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+
+      /* Responsive design */
+      @media (max-width: 900px) {
+        .container {
+          padding: 20px;
+          margin: 10px;
+          max-width: none;
+          border-radius: 4px;
+        }
+
+        .channel-item {
+          padding: 12px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .channel-artwork {
+          width: 100%;
+        }
+
+        .remove-btn {
+          align-self: flex-end;
+          margin-top: 8px;
+        }
+
+        .channel-details {
+          min-width: 0;
+          word-break: break-all;
+        }
+
+        .channel-id {
+          word-break: break-all;
+          font-size: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          padding: 15px;
+          margin: 5px;
+          border-radius: 0;
+        }
+
+        .channel-thumbnail {
+          width: 40px;
+          height: 40px;
+        }
+
+        .remove-btn {
+          padding: 6px 12px;
+          font-size: 11px;
+        }
       }
       button {
         background: var(--button-bg);
@@ -120,57 +200,41 @@
       }
 
       .channel-item {
-        display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 10px 15px;
-        border-bottom: 1px solid var(--channel-item-border);
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        color: var(--text-color);
-        transition: background-color 0.2s ease;
-        gap: 1rem;
-        background-color: var(--channel-item-bg);
-      }
-
-      .channel-item:last-child {
-        border-bottom: none;
+        justify-content: space-between;
+        padding: 16px;
+        background: var(--channel-item-bg);
+        border: 1px solid var(--channel-item-border);
+        border-radius: 8px;
+        margin: 8px 0;
+        transition: all 0.3s ease;
+        cursor: default;
       }
 
       .channel-item:hover {
-        background-color: var(--channel-item-hover);
-      }
-
-      .remove-btn {
-        font-size: 12px;
-        padding: 4px 8px;
-        background-color: var(--input-bg);
-        border: 1px solid var(--input-border);
-        border-radius: 4px;
-        color: var(--text-color);
-        cursor: pointer;
-        transition: background-color 0.2s ease, color 0.2s ease,
-          border-color 0.2s ease;
-        max-width: 6rem;
-      }
-
-      .remove-btn:hover {
-        background-color: var(--channel-item-hover);
-        color: var(--button-bg);
+        background: var(--channel-item-hover);
         border-color: var(--button-bg);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px var(--shadow-color);
       }
 
       .channel-info {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+        min-width: 0;
       }
 
       .username {
         font-weight: bold;
         color: var(--username-color);
         transition: color 0.3s ease;
+        word-break: break-word;
+        line-height: 1.2;
+        cursor: text;
+        padding: 0.33rem 0.22rem;
+        &:hover {
+          background-color: var(--editable-bg);
+          color: var(--editable-text);
+        }
       }
 
       .loading {
@@ -222,6 +286,44 @@
           box-shadow 0.3s ease;
       }
 
+      .channel-artwork {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .channel-thumbnail {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border-color);
+        flex-shrink: 0;
+        transition: border-color 0.3s ease, transform 0.2s ease;
+      }
+
+      .channel-thumbnail:hover {
+        border-color: var(--button-bg);
+        transform: scale(1.05);
+      }
+
+      .channel-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .username {
+        font-weight: bold;
+        color: var(--username-color);
+        transition: color 0.3s ease;
+        word-break: break-word;
+        line-height: 1.2;
+      }
+
       .channel-id {
         font-family: monospace;
         font-size: 12px;
@@ -232,6 +334,19 @@
         border: 1px solid var(--channel-id-border);
         transition: color 0.3s ease, background-color 0.3s ease,
           border-color 0.3s ease;
+        word-break: break-all;
+        line-height: 1.1;
+      }
+
+      .channel-stats {
+        font-size: 11px;
+        color: var(--channel-id-color);
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+      }
+
+      .channel-item:hover .channel-stats {
+        opacity: 1;
       }
 
       .theme-toggle {
@@ -284,14 +399,26 @@
         🌙
       </button>
       <h2>Manage YouTube Channels</h2>
+      <h3
+        style="
+          color: var(--text-color);
+          opacity: 0.7;
+          font-size: 14px;
+          margin-top: -15px;
+          margin-bottom: 25px;
+          font-weight: normal;
+        "
+      >
+        Add channels to monitor with profile pictures and subscriber counts
+      </h3>
       <input
         type="text"
         id="channelIdInput"
-        placeholder="@username or channel ID (e.g. UC123456789...)"
+        placeholder="Enter @username or channel ID (e.g. @MrBeast or UC123456789...)"
       />
       <button onclick="addChannelId()">Add Channel</button>
       <div id="result"></div>
-      <h3>Current Channels (Username & ID)</h3>
+      <h3>Your Monitored Channels</h3>
       <ul id="channelList"></ul>
     </div>
 
@@ -310,28 +437,59 @@
 
         return fetch("/get_channels") // Return the Promise here
           .then((res) => res.json())
-          .then((data) => {
+          .then(async (data) => {
             const list = document.getElementById("channelList");
             list.innerHTML = "";
 
             if (data.channels && data.channels.length > 0) {
+              // Fetch detailed channel info including thumbnails
+              const channelIds = data.channels.map((channel) => channel.id);
+              const channelInfoResponse = await fetch("/get_channel_info", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ channel_ids: channelIds }),
+              });
+              const channelInfoData = await channelInfoResponse.json();
+
               (data.channels || []).forEach((channel) => {
                 const li = document.createElement("li");
                 li.className = "channel-item";
                 li.setAttribute("data-channel-id", channel.id);
                 li.setAttribute("data-display-name", channel.display_name);
+
+                // Get channel info including thumbnail
+                const info = channelInfoData[channel.id] || {};
+                const thumbnail =
+                  info.thumbnail ||
+                  "https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png";
+                const title = info.title || channel.display_name;
+
                 li.innerHTML = `
             <div class="channel-info">
-              <span class="username">${channel.display_name}</span>
-              <span class="channel-id">${channel.id}</span>
+              <div class="channel-artwork">
+                <img src="${thumbnail}" alt="${title}" class="channel-thumbnail" onerror="this.src='https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png'">
+                <div class="channel-details">
+                  <span class="username">${channel.display_name}</span>
+                  <span class="channel-id">${channel.id}</span>
+                  ${
+                    info.subscriber_count
+                      ? `<span class="channel-stats">${parseInt(
+                          info.subscriber_count
+                        ).toLocaleString()} subscribers</span>`
+                      : ""
+                  }
+                </div>
+              </div>
             </div>
-            <button class="remove-btn" onclick="removeChannelId('${channel.display_name}')">Remove</button>
+            <button class="remove-btn" onclick="removeChannelId('${
+              channel.display_name
+            }')">Remove</button>
           `;
                 list.appendChild(li);
               });
             } else {
               list.innerHTML =
-                '<li style="color: var(--text-color); padding: 20px; text-align: center; font-style: italic; background: var(--channel-item-bg); border: 1px solid var(--border-color); border-radius: 4px; margin: 10px 0;">No channels found. Add some channels above!</li>';
+                '<li style="color: var(--text-color); padding: 30px; text-align: center; font-style: italic; background: var(--channel-item-bg); border: 1px solid var(--border-color); border-radius: 8px; margin: 10px 0;"><div style="opacity: 0.7;">📺 No channels yet!</div><div style="margin-top: 8px; font-size: 14px;">Add your favorite YouTube channels above to start monitoring them with beautiful artwork and subscriber counts.</div></li>';
             }
             return data; // Optional: return data for chaining
           })
@@ -377,20 +535,8 @@
                 '<span class="success">Channel ID added: ' +
                 data.channel_id +
                 "</span>";
-              // Add to UI immediately
-              const list = document.getElementById("channelList");
-              const li = document.createElement("li");
-              li.className = "channel-item";
-              li.setAttribute("data-channel-id", data.channel_id);
-              li.setAttribute("data-display-name", channelId);
-              li.innerHTML = `
-                <div class="channel-info">
-                  <span class="username">${channelId}</span>
-                  <span class="channel-id">${data.channel_id}</span>
-                </div>
-                <button class="remove-btn" onclick="removeChannelId('${channelId}')">Remove</button>
-              `;
-              list.appendChild(li);
+              // Refresh the entire list to show artwork
+              fetchChannelIds();
               document.getElementById("channelIdInput").value = "";
             } else {
               resultDiv.innerHTML =
@@ -463,12 +609,8 @@
                 '<span class="success">Channel ID removed: ' +
                 data.channel_id +
                 "</span>";
-              // Remove from UI immediately
-              const list = document.getElementById("channelList");
-              const li = list.querySelector(
-                `li[data-display-name='${displayName}']`
-              );
-              if (li) list.removeChild(li);
+              // Refresh the entire list to show updated artwork
+              fetchChannelIds();
             } else {
               resultDiv.innerHTML =
                 '<span class="error">' +

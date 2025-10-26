@@ -70,11 +70,24 @@ class Cache:
             with open(self.cache_file, 'w') as f:
                 json.dump(cache_data, f, indent=2)
 
-    def clear(self) -> None:
-        """Clear all cache entries."""
+    def delete(self, key: str) -> None:
+        """Delete a specific key from cache."""
         with self._lock:
-            if os.path.exists(self.cache_file):
-                os.remove(self.cache_file)
+            if not os.path.exists(self.cache_file):
+                return
+
+            try:
+                with open(self.cache_file, 'r') as f:
+                    cache_data = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                return
+
+            if key in cache_data:
+                del cache_data[key]
+
+            # Save updated cache
+            with open(self.cache_file, 'w') as f:
+                json.dump(cache_data, f, indent=2)
 
     def cleanup(self) -> None:
         """Remove expired entries from cache."""
@@ -101,5 +114,5 @@ class Cache:
 
 
 # Global cache instances
-youtube_cache = Cache('youtube_api_cache.json', 'youtube_api_cache.lock', 60)  # 30 minutes
+youtube_cache = Cache('youtube_api_cache.json', 'youtube_api_cache.lock', 3600)  # 1 hour
 state_cache = Cache('channel_states.json', 'channel_states.lock', 0)  # No TTL for states

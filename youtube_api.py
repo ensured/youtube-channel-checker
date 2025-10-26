@@ -134,6 +134,57 @@ class YouTubeAPI:
             print(f"Error fetching multiple channels info: {e}")
             return {}
 
+    def get_multiple_channels_info_light(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Get basic channel information (just thumbnails, no recent videos) for faster loading."""
+        if not self.youtube:
+            return {}
+
+        try:
+            # Check cache first for each channel
+            channels_info = {}
+            uncached_ids = []
+
+            for channel_id in channel_ids:
+                cached_info = youtube_cache.get(f"channel_info_{channel_id}")
+                if cached_info:
+                    channels_info[channel_id] = cached_info
+                else:
+                    uncached_ids.append(channel_id)
+
+            # Only fetch uncached channels from API
+            if uncached_ids:
+                response = self.youtube.channels().list(
+                    part='snippet,statistics',
+                    id=','.join(uncached_ids)
+                ).execute()
+
+                if response.get('items'):
+                    for channel_data in response['items']:
+                        channel_id = channel_data['id']
+                        snippet = channel_data['snippet']
+                        statistics = channel_data['statistics']
+
+                        info = {
+                            'id': channel_id,
+                            'title': snippet['title'],
+                            'description': snippet['description'][:200] + '...' if len(snippet['description']) > 200 else snippet['description'],
+                            'thumbnail': snippet['thumbnails']['default']['url'],
+                            'subscriber_count': statistics.get('subscriberCount', '0'),
+                            'video_count': statistics.get('videoCount', '0'),
+                            'recent_videos': [],  # Empty for faster loading
+                            'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        }
+
+                        channels_info[channel_id] = info
+                        # Cache for 1 hour
+                        youtube_cache.set(f"channel_info_{channel_id}", info)
+
+            return channels_info
+
+        except HttpError as e:
+            print(f"Error fetching multiple channels info (light): {e}")
+            return {}
+
     def _get_latest_video(self, uploads_playlist_id: str, channel_id: str) -> Optional[Dict[str, Any]]:
         """Get the latest video from uploads playlist."""
         try:
