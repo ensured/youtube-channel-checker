@@ -15,36 +15,67 @@ class YouTubeAPI:
         self.youtube = build('youtube', 'v3', developerKey=config.youtube_api_key) if config.youtube_api_key else None
 
     def get_channel_id(self, identifier: str) -> Optional[str]:
-        """Convert username to channel ID if needed, with caching."""
-        if not identifier.startswith('@'):
-            return identifier  # Already a channel ID
+        """Convert username, handle, or validate channel ID, with caching."""
+        # If it's already a channel ID (24 characters starting with UC), return as-is
+        if len(identifier) == 24 and identifier.startswith('UC'):
+            return identifier
 
         # Check cache first
         cached_channel_id = youtube_cache.get(f"username_{identifier}")
         if cached_channel_id:
             return cached_channel_id
 
-        # Fetch from API
+        # Handle different identifier types
         try:
-            response = self.youtube.search().list(
-                part='snippet',
-                q=identifier,
-                type='channel',
-                maxResults=1
-            ).execute()
+            if identifier.startswith('@'):
+                # It's a handle, use forHandle parameter (modern approach)
+                response = self.youtube.channels().list(
+                    part='id',
+                    forHandle=identifier  # @username format
+                ).execute()
 
-            if not response.get('items'):
-                print(f"No channel found with username: {identifier}")
-                return None
+                if not response.get('items'):
+                    print(f"No channel found with handle: {identifier}")
+                    return None
 
-            channel_id = response['items'][0]['id']['channelId']
+                channel_id = response['items'][0]['id']
 
-            # Cache the result (but we'll be removing this cache soon)
+            elif not identifier.startswith('@') and not identifier.startswith('UC'):
+                # It's a legacy username, try search as fallback
+                response = self.youtube.search().list(
+                    part='snippet',
+                    q=identifier,
+                    type='channel',
+                    maxResults=1
+                ).execute()
+
+                if not response.get('items'):
+                    print(f"No channel found with username: {identifier}")
+                    return None
+
+                channel_id = response['items'][0]['id']['channelId']
+
+            else:
+                # Unknown format, try search as last resort
+                response = self.youtube.search().list(
+                    part='snippet',
+                    q=identifier,
+                    type='channel',
+                    maxResults=1
+                ).execute()
+
+                if not response.get('items'):
+                    print(f"No channel found with query: {identifier}")
+                    return None
+
+                channel_id = response['items'][0]['id']['channelId']
+
+            # Cache the result
             youtube_cache.set(f"username_{identifier}", channel_id)
             return channel_id
 
         except HttpError as e:
-            print(f"Error searching for channel: {e}")
+            print(f"Error fetching channel ID for {identifier}: {e}")
             return None
 
     def get_channel_info(self, channel_id: str) -> Optional[Dict[str, Any]]:

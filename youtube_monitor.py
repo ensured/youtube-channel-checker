@@ -62,6 +62,20 @@ def clear_all_channel_cache():
     # For now, we'll just clear the entire cache
     youtube_cache.clear()
 
+def clear_channel_cache(channel_id: str):
+    """Clear cache for a specific channel."""
+    from cache import youtube_cache
+
+    # Clear the channel info cache
+    youtube_cache.delete(f"channel_info_{channel_id}")
+
+    # Clear any username cache entries that map to this channel_id
+    for identifier, cid in config.channels.items():
+        if cid == channel_id:
+            # This identifier maps to our channel_id, clear its username cache
+            youtube_cache.delete(f"username_{identifier}")
+            break  # Should only be one identifier per channel_id
+
 @app.route('/add_channel', methods=['POST'])
 @login_required
 def add_channel():
@@ -245,4 +259,4 @@ if __name__ == "__main__":
     print(f"Monitoring {len(config.get_channel_ids())} channels")
     print(f"Check interval: {config.check_interval} seconds")
     print(f"Notifications configured: {'Yes' if notification_service.is_configured else 'No - check RESEND_API_KEY and NOTIFICATION_EMAIL'}")
-    app.run(host='0.0.0.0', port=5001, use_reloader=False)
+    app.run(host='0.0.0.0', port=5001, use_reloader=True)

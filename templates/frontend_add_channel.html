@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Manage YouTube Channels</title>
+    <script
+      src="https://kit.fontawesome.com/749de1908e.js"
+      crossorigin="anonymous"
+    ></script>
     <style>
       :root {
         --bg-color: #f9f9f9;
@@ -101,8 +105,7 @@
         background: var(--error-color);
         color: white;
         border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
+        border-radius: 50%;
         cursor: pointer;
         font-size: 12px;
         font-weight: 500;
@@ -110,14 +113,12 @@
         flex-shrink: 0;
         opacity: 0.9;
         display: flex;
-        max-width: 75px;
-        justify-content: start;
-        align-items: start;
-      }
-
-      .remove-btn:hover {
-        opacity: 1;
-        transform: scale(1.05);
+        max-width: 24px;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        padding: 6px !important;
+        margin: 0px !important;
       }
 
       /* Responsive design */
@@ -162,11 +163,6 @@
           width: 40px;
           height: 40px;
         }
-
-        .remove-btn {
-          padding: 6px 12px;
-          font-size: 11px;
-        }
       }
       button {
         background: var(--button-bg);
@@ -204,6 +200,18 @@
         margin: 8px 0;
         transition: all 0.3s ease;
         cursor: default;
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      .channel-item.removing {
+        transform: translateX(-100%);
+        opacity: 0.5;
+      }
+
+      .channel-item.loading {
+        opacity: 0.7;
+        transform: scale(0.98);
       }
 
       .channel-item:hover {
@@ -223,12 +231,9 @@
         transition: color 0.3s ease;
         word-break: break-word;
         line-height: 1.2;
+        flex: 1;
+        min-width: 0;
         cursor: text;
-        padding: 0.33rem 0.22rem;
-        &:hover {
-          background-color: var(--editable-bg);
-          color: var(--editable-text);
-        }
       }
 
       .loading {
@@ -318,14 +323,6 @@
         gap: 4px;
         flex: 1;
         min-width: 0;
-      }
-
-      .username {
-        font-weight: bold;
-        color: var(--username-color);
-        transition: color 0.3s ease;
-        word-break: break-word;
-        line-height: 1.2;
       }
 
       .channel-id {
@@ -612,6 +609,14 @@
           text-align: center;
         }
       }
+      @keyframes spinner {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
@@ -649,7 +654,10 @@
 
     <!-- Channel Details Modal -->
     <div id="channelModal" class="modal" style="display: none">
-      <div class="modal-content">
+      <div
+        class="modal-content"
+        onclick="window.open('https://youtube.com/channel/' + modalChannelId.textContent)"
+      >
         <div class="modal-header">
           <div class="modal-artwork">
             <img id="modalThumbnail" src="" alt="" class="modal-thumbnail" />
@@ -809,7 +817,13 @@
               }', '${channel.display_name}')">
                 <img src="${thumbnail}" alt="${title}" class="channel-thumbnail" onerror="this.src='https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png'">
                 <div class="channel-details">
-                  <span class="username">${channel.display_name}</span>
+                  <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
+                    <div class="username">${channel.display_name}</div>
+                     <button class="remove-btn" onclick="removeChannelId('${
+                       channel.display_name
+                     }'); event.stopPropagation();"><i class="fas fa-trash"></i>
+                    </button>
+                  </div>
                   <span class="channel-id">${channel.id}</span>
                   ${
                     info.subscriber_count
@@ -821,9 +835,7 @@
                 </div>
               </div>
             </div>
-            <button class="remove-btn" onclick="removeChannelId('${
-              channel.display_name
-            }')">Remove</button>
+         
           `;
                 list.appendChild(li);
               });
@@ -863,6 +875,17 @@
             '<span class="error">Please enter a channel ID.</span>';
           return;
         }
+
+        // Clear input immediately
+        document.getElementById("channelIdInput").value = "";
+
+        // Add placeholder channel item immediately (optimistic update)
+        addChannelToUI(channelId, null, true);
+
+        // Show loading state
+        resultDiv.innerHTML =
+          '<span style="color: var(--button-bg);">Adding channel...</span>';
+
         fetch("/add_channel", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -872,22 +895,186 @@
           .then((data) => {
             if (data.status === "success") {
               resultDiv.innerHTML =
-                '<span class="success">Channel ID added: ' +
+                '<span class="success">Channel added successfully: ' +
                 data.channel_id +
                 "</span>";
-              // Refresh the entire list to show artwork
-              fetchChannelIds();
-              document.getElementById("channelIdInput").value = "";
+
+              // Update the placeholder with real data
+              updateChannelInUI(channelId, data.channel_id);
             } else {
               resultDiv.innerHTML =
                 '<span class="error">' +
-                (data.error || "Error adding channel ID") +
+                (data.error || "Error adding channel") +
                 "</span>";
+
+              // Remove the placeholder channel
+              removeChannelFromUI(channelId);
             }
           })
-          .catch(() => {
-            resultDiv.innerHTML = '<span class="error">Network error.</span>';
+          .catch((error) => {
+            console.error("Error adding channel:", error);
+            resultDiv.innerHTML =
+              '<span class="error">Network error. Please try again.</span>';
+
+            // Remove the placeholder channel
+            removeChannelFromUI(channelId);
           });
+      }
+      // Helper functions for optimistic UI updates
+      function addChannelToUI(
+        originalIdentifier,
+        channelData,
+        isLoading = false
+      ) {
+        const list = document.getElementById("channelList");
+
+        // Check if channel already exists
+        if (
+          document.querySelector(`li[data-channel-id="${originalIdentifier}"]`)
+        ) {
+          return;
+        }
+
+        const li = document.createElement("li");
+        li.className = "channel-item";
+        li.setAttribute("data-channel-id", originalIdentifier);
+        li.setAttribute("data-display-name", originalIdentifier);
+
+        if (isLoading) {
+          // Show loading placeholder
+          li.innerHTML = `
+            <div class="channel-info">
+              <div class="channel-artwork">
+                <img src="https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png"
+                     alt="Loading..." class="channel-thumbnail">
+                <div class="channel-details">
+                  <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
+                    <div class="username" style="color: var(--channel-id-color); opacity: 0.7;">
+                      Adding ${originalIdentifier}...
+                    </div>
+                     <button class="remove-btn" onclick="removeChannelFromUI('${originalIdentifier}'); event.stopPropagation();"
+                            style="opacity: 0.5; cursor: not-allowed;" disabled>
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <span class="channel-id">${originalIdentifier}</span>
+                </div>
+              </div>
+            </div>
+          `;
+          li.classList.add("loading");
+        } else {
+          // Show real channel data
+          const thumbnail =
+            channelData.thumbnail ||
+            "https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png";
+          const title = channelData.title || originalIdentifier;
+          const resolvedChannelId = channelData.id || originalIdentifier;
+
+          li.innerHTML = `
+            <div class="channel-info">
+              <div class="channel-artwork" onclick="openChannelModal('${resolvedChannelId}', '${originalIdentifier}')">
+                <img src="${thumbnail}" alt="${title}" class="channel-thumbnail"
+                     onerror="this.src='https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png'">
+                <div class="channel-details">
+                  <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
+                    <div class="username">${originalIdentifier}</div>
+                     <button class="remove-btn" onclick="removeChannelId('${originalIdentifier}'); event.stopPropagation();"><i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <span class="channel-id">${resolvedChannelId}</span>
+                  ${
+                    channelData.subscriber_count
+                      ? `<span class="channel-stats">${parseInt(
+                          channelData.subscriber_count
+                        ).toLocaleString()} subscribers</span>`
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Insert at the top of the list for immediate visibility
+        if (list.firstChild) {
+          list.insertBefore(li, list.firstChild);
+        } else {
+          list.appendChild(li);
+        }
+      }
+
+      function updateChannelInUI(originalIdentifier, resolvedChannelId) {
+        const channelItem = document.querySelector(
+          `li[data-channel-id="${originalIdentifier}"]`
+        );
+        if (!channelItem) return;
+
+        // Fetch real channel data
+        fetch("/get_channel_info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel_ids: [resolvedChannelId] }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const channelData = data[resolvedChannelId] || {};
+            const thumbnail =
+              channelData.thumbnail ||
+              "https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png";
+            const title = channelData.title || originalIdentifier;
+
+            // Update the channel item with real data
+            channelItem.setAttribute("data-channel-id", resolvedChannelId);
+            channelItem.setAttribute("data-display-name", originalIdentifier);
+            channelItem.classList.remove("loading");
+
+            channelItem.innerHTML = `
+            <div class="channel-info">
+              <div class="channel-artwork" onclick="openChannelModal('${resolvedChannelId}', '${originalIdentifier}')">
+                <img src="${thumbnail}" alt="${title}" class="channel-thumbnail"
+                     onerror="this.src='https://www.gstatic.com/youtube/img/originals/promo/ytr-logo-for-search_96x96.png'">
+                <div class="channel-details">
+                  <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
+                    <div class="username">${originalIdentifier}</div>
+                     <button class="remove-btn" onclick="removeChannelId('${originalIdentifier}'); event.stopPropagation();"><i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <span class="channel-id">${resolvedChannelId}</span>
+                  ${
+                    channelData.subscriber_count
+                      ? `<span class="channel-stats">${parseInt(
+                          channelData.subscriber_count
+                        ).toLocaleString()} subscribers</span>`
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+
+            // Update the onclick handler in the artwork div
+            const artworkDiv = channelItem.querySelector(".channel-artwork");
+            artworkDiv.onclick = () =>
+              openChannelModal(resolvedChannelId, originalIdentifier);
+          })
+          .catch((error) => {
+            console.error("Error updating channel data:", error);
+            // Remove the placeholder on error
+            channelItem.remove();
+          });
+      }
+
+      function removeChannelFromUI(originalIdentifier) {
+        const channelItem = document.querySelector(
+          `li[data-channel-id="${originalIdentifier}"]`
+        );
+        if (channelItem) {
+          channelItem.classList.add("removing");
+          setTimeout(() => {
+            channelItem.remove();
+          }, 300);
+        }
       }
       function updateUsername() {
         const channelUsername = document
@@ -921,6 +1108,7 @@
               );
               if (li) {
                 li.setAttribute("data-display-name", channelUsername);
+                li.setAttribute("data-channel-id", channelID); // Update the actual channel ID too
                 li.querySelector(".username").textContent = channelUsername;
               }
             } else {
@@ -937,6 +1125,22 @@
 
       function removeChannelId(displayName) {
         const resultDiv = document.getElementById("result");
+
+        // Find and remove the channel item immediately (optimistic update)
+        const channelItem = document.querySelector(
+          `li[data-display-name="${displayName}"]`
+        );
+        if (channelItem) {
+          channelItem.classList.add("removing");
+          setTimeout(() => {
+            channelItem.remove();
+          }, 300);
+        }
+
+        // Show loading state
+        resultDiv.innerHTML =
+          '<span style="color: var(--error-color);">Removing channel...</span>';
+
         fetch("/remove_channel", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -946,20 +1150,28 @@
           .then((data) => {
             if (data.status === "success") {
               resultDiv.innerHTML =
-                '<span class="success">Channel ID removed: ' +
+                '<span class="success">Channel removed successfully: ' +
                 data.channel_id +
                 "</span>";
-              // Refresh the entire list to show updated artwork
-              fetchChannelIds();
             } else {
               resultDiv.innerHTML =
                 '<span class="error">' +
-                (data.error || "Error removing channel ID") +
+                (data.error || "Error removing channel") +
                 "</span>";
+
+              // If removal failed, we would need to add the channel back
+              // But since we don't have the full channel data, we'll just refresh
+              setTimeout(() => fetchChannelIds(), 2000);
             }
           })
-          .catch(() => {
-            resultDiv.innerHTML = '<span class="error">Network error.</span>';
+          .catch((error) => {
+            console.error("Error removing channel:", error);
+            resultDiv.innerHTML =
+              '<span class="error">Network error. Please try again.</span>';
+
+            // If removal failed, we would need to add the channel back
+            // But since we don't have the full channel data, we'll just refresh
+            setTimeout(() => fetchChannelIds(), 2000);
           });
       }
       // Theme toggle functionality
@@ -1001,15 +1213,25 @@
         document.querySelectorAll(".username").forEach((username) => {
           username.contentEditable = true;
           let debounceTimer;
+          let oldUsername;
+
+          // Prevent modal opening when clicking to edit username
+          username.addEventListener("click", (e) => {
+            e.stopPropagation();
+            oldUsername = username.textContent.trim();
+          });
+
+          // Also prevent on mousedown for better UX
+          username.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+          });
+
           username.addEventListener("input", () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-              const oldUsername =
-                username.parentElement.parentElement.getAttribute(
-                  "data-display-name"
-                );
               const displayName = username.textContent.trim();
-              const channelId = username.nextElementSibling.textContent.trim();
+              const channelId =
+                username.parentElement.nextElementSibling.textContent.trim();
               const resultDiv = document.getElementById("result");
               if (displayName && displayName !== oldUsername) {
                 fetch("/update_username", {
