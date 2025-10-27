@@ -201,8 +201,10 @@
         background: var(--input-bg);
         color: var(--text-color);
       }
+
       input#channelIdInput {
         width: inherit;
+        margin-bottom: 0px;
       }
 
       input:focus {
@@ -971,7 +973,7 @@
       <input
         type="text"
         id="channelIdInput"
-        placeholder="Enter @username, channel name, or channel ID (e.g. @MrBeast, MrBeast, UC123...)"
+        placeholder="Enter @username or channel ID (e.g. @MrBeast, UC...)"
       />
       <button onclick="addChannelId()">Add Channel</button>
       <div id="result"></div>
