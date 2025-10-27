@@ -53,7 +53,7 @@ def index():
     display_channels = []
     for identifier in config.channels.keys():
         display_channels.append(identifier)
-    return render_template('frontend_add_channel.html', channel_ids=display_channels)
+    return render_template('frontend_add_channel.html', channel_ids=display_channels, channel_count=len(display_channels))
 
 def clear_all_channel_cache():
     """Clear cache for all channels."""

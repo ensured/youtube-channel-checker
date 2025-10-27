@@ -77,10 +77,10 @@ class MonitorService:
             print("No channels to check")
             return
 
-        print(f"\nChecking {len(channel_ids_to_check)} channels using batch API...")
+        print(f"\nChecking {len(channel_ids_to_check)} channels using efficient monitoring API...")
 
-        # Use batch API to get all channel info in one request
-        channels_info = youtube_api.get_multiple_channels_info(channel_ids_to_check)
+        # Use efficient monitoring API that only fetches latest video (not 10 recent videos)
+        channels_info = youtube_api.get_multiple_channels_info_monitoring(channel_ids_to_check)
 
         if not channels_info:
             print("Failed to fetch any channel data")
@@ -88,54 +88,38 @@ class MonitorService:
 
         # Process each channel's results
         for channel_id, channel_info in channels_info.items():
-            if not channel_info or not channel_info.get('recent_videos'):
-                print(f"No videos found for channel: {channel_id}")
+            if not channel_info or not channel_info.get('latest_video'):
+                print(f"No latest video found for channel: {channel_id}")
                 continue
 
-            # Fallback: if recent_videos exists but is empty, try latest_video
-            if not channel_info['recent_videos'] and channel_info.get('latest_video'):
-                channel_info['recent_videos'] = [channel_info['latest_video']]
-
-            # Get current recent videos and last known videos
-            current_videos = channel_info['recent_videos']
+            # Get current latest video and last known video
+            current_video = channel_info['latest_video']
             last_video_ids = channel_states.get(channel_id, [])
 
             # If no last video IDs, this is the first check
             if not last_video_ids:
-                print(f"First check for {channel_id}, storing {len(current_videos)} recent videos")
-                channel_states[channel_id] = [v['id'] for v in current_videos]
+                print(f"First check for {channel_id}, storing latest video: {current_video['title']}")
+                channel_states[channel_id] = [current_video['id']]
                 state_cache.set('channel_states', channel_states)
                 print(f"DEBUG: Saved channel_states to cache: {channel_states}")
                 continue
 
-            # Find new videos (videos in current but not in last)
-            new_videos = [v for v in current_videos if v['id'] not in last_video_ids]
+            # Check if this is a new video
+            current_video_id = current_video['id']
+            if current_video_id not in last_video_ids:
+                print(f"Found new video: {current_video['title']}")
 
-            if new_videos:
-                print(f"Found {len(new_videos)} new videos:")
-                for video in new_videos:
-                    print(f"  - {video['title']}")
-
-                # Update state with current videos (keep up to 20 most recent)
-                channel_states[channel_id] = [v['id'] for v in current_videos[:20]]
+                # Update state with current video (keep up to 20 most recent)
+                channel_states[channel_id] = [current_video_id] + last_video_ids[:19]
                 state_cache.set('channel_states', channel_states)
                 print(f"DEBUG: Updated channel_states to cache: {channel_states}")
 
-                # Send notification based on number of new videos
-                if len(new_videos) == 1:
-                    # Single video notification
-                    notification_result = notification_service.send_video_notification(channel_info['title'], new_videos[0])
-                    if notification_result:
-                        print(f"✅ Notification sent successfully for: {new_videos[0]['title']}")
-                    else:
-                        print(f"❌ Failed to send notification for: {new_videos[0]['title']}")
+                # Send notification for the new video
+                notification_result = notification_service.send_video_notification(channel_info['title'], current_video)
+                if notification_result:
+                    print(f"✅ Notification sent successfully for: {current_video['title']}")
                 else:
-                    # Multiple videos notification
-                    notification_result = notification_service.send_multiple_videos_notification(channel_info['title'], new_videos)
-                    if notification_result:
-                        print(f"✅ Notification sent successfully for {len(new_videos)} videos")
-                    else:
-                        print(f"❌ Failed to send notification for {len(new_videos)} videos")
+                    print(f"❌ Failed to send notification for: {current_video['title']}")
             else:
                 print(f"No new videos for {channel_id}")
 

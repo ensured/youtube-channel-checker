@@ -14,14 +14,16 @@ class Cache:
         self.ttl_seconds = ttl_seconds
         self._lock = FileLock(lock_file)
 
-    def _is_expired(self, timestamp_str: str) -> bool:
+    def _is_expired(self, timestamp_str: str, custom_ttl: Optional[int] = None) -> bool:
         """Check if a cached timestamp has expired."""
         try:
             cached_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+            # Use custom TTL if provided, otherwise use default
+            ttl_to_use = custom_ttl if custom_ttl is not None else self.ttl_seconds
             # If TTL is 0, never expire
-            if self.ttl_seconds == 0:
+            if ttl_to_use == 0:
                 return False
-            return datetime.now() - cached_time > timedelta(seconds=self.ttl_seconds)
+            return datetime.now() - cached_time > timedelta(seconds=ttl_to_use)
         except ValueError:
             return True  # If parsing fails, treat as expired
 
@@ -42,13 +44,13 @@ class Cache:
                 return None
 
             timestamp = entry.get('timestamp')
-            if not timestamp or self._is_expired(timestamp):
+            if not timestamp or self._is_expired(timestamp, entry.get('custom_ttl')):
                 return None
 
             return entry.get('data')
 
-    def set(self, key: str, value: Any) -> None:
-        """Set a value in cache with current timestamp."""
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """Set a value in cache with current timestamp and optional custom TTL."""
         with self._lock:
             # Load existing cache
             if os.path.exists(self.cache_file):
@@ -65,6 +67,10 @@ class Cache:
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'data': value
             }
+
+            # If custom TTL provided, store it (for future use if needed)
+            if ttl is not None and ttl != self.ttl_seconds:
+                cache_data[key]['custom_ttl'] = ttl
 
             # Save cache
             with open(self.cache_file, 'w') as f:

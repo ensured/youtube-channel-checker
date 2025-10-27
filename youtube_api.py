@@ -70,8 +70,8 @@ class YouTubeAPI:
 
                 channel_id = response['items'][0]['id']['channelId']
 
-            # Cache the result
-            youtube_cache.set(f"username_{identifier}", channel_id)
+            # Cache the result for 24 hours (channel IDs don't change often)
+            youtube_cache.set(f"username_{identifier}", channel_id, ttl=86400)
             return channel_id
 
         except HttpError as e:
@@ -82,6 +82,11 @@ class YouTubeAPI:
         """Get comprehensive channel information."""
         if not self.youtube:
             return None
+
+        # Check cache first
+        cached_info = youtube_cache.get(f"channel_info_{channel_id}")
+        if cached_info:
+            return cached_info
 
         # channel_id should already be a proper channel ID
         try:
@@ -105,7 +110,7 @@ class YouTubeAPI:
             latest_video = self._get_latest_video(uploads_playlist_id, channel_id)
             recent_videos = self.get_recent_videos(uploads_playlist_id, channel_id, 10)
 
-            return {
+            info = {
                 'id': channel_id,
                 'title': snippet['title'],
                 'description': snippet['description'][:200] + '...' if len(snippet['description']) > 200 else snippet['description'],
@@ -116,6 +121,10 @@ class YouTubeAPI:
                 'recent_videos': recent_videos,  # Add recent videos
                 'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
+
+            # Cache for 2 hours (comprehensive data changes less frequently)
+            youtube_cache.set(f"channel_info_{channel_id}", info, ttl=7200)
+            return info
 
         except HttpError as e:
             print(f"Error fetching channel info: {e}")
@@ -159,10 +168,71 @@ class YouTubeAPI:
                     'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
 
+                # Cache individual channel info for 2 hours
+                youtube_cache.set(f"channel_info_{channel_id}", channels_info[channel_id], ttl=7200)
+
             return channels_info
 
         except HttpError as e:
             print(f"Error fetching multiple channels info: {e}")
+            return {}
+
+    def get_multiple_channels_info_monitoring(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Get minimal channel information for monitoring (just latest video, no recent videos list)."""
+        if not self.youtube:
+            return {}
+
+        try:
+            # Check cache first for each channel
+            channels_info = {}
+            uncached_ids = []
+
+            for channel_id in channel_ids:
+                cached_info = youtube_cache.get(f"channel_info_{channel_id}")
+                if cached_info:
+                    channels_info[channel_id] = cached_info
+                else:
+                    uncached_ids.append(channel_id)
+
+            # Only fetch uncached channels from API
+            if uncached_ids:
+                response = self.youtube.channels().list(
+                    part='snippet,contentDetails,statistics',
+                    id=','.join(uncached_ids)
+                ).execute()
+
+                if response.get('items'):
+                    for channel_data in response['items']:
+                        channel_id = channel_data['id']
+                        snippet = channel_data['snippet']
+                        statistics = channel_data['statistics']
+
+                        # Get the uploads playlist ID
+                        uploads_playlist_id = channel_data['contentDetails']['relatedPlaylists']['uploads']
+
+                        # Get ONLY the latest video for monitoring (not 10 recent videos)
+                        latest_video = self._get_latest_video(uploads_playlist_id, channel_id)
+
+                        info = {
+                            'id': channel_id,
+                            'title': snippet['title'],
+                            'description': snippet['description'][:200] + '...' if len(snippet['description']) > 200 else snippet['description'],
+                            'thumbnail': snippet['thumbnails']['default']['url'],
+                            'subscriber_count': statistics.get('subscriberCount', '0'),
+                            'video_count': statistics.get('videoCount', '0'),
+                            'latest_video': latest_video,
+                            'recent_videos': [],  # Empty for monitoring efficiency
+                            'last_check': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        }
+
+                        channels_info[channel_id] = info
+                        # Cache for 2 hours (longer than UI cache)
+                        youtube_cache.set(f"channel_info_{channel_id}", info, ttl=7200)
+
+            return channels_info
+
+        except HttpError as e:
+            print(f"Error fetching multiple channels info (monitoring): {e}")
             return {}
 
     def get_multiple_channels_info_light(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
@@ -207,8 +277,8 @@ class YouTubeAPI:
                         }
 
                         channels_info[channel_id] = info
-                        # Cache for 1 hour
-                        youtube_cache.set(f"channel_info_{channel_id}", info)
+                        # Cache for 4 hours (longer for UI since metadata changes infrequently)
+                        youtube_cache.set(f"channel_info_{channel_id}", info, ttl=14400)
 
             return channels_info
 
@@ -222,7 +292,7 @@ class YouTubeAPI:
             response = self.youtube.playlistItems().list(
                 part='snippet',
                 playlistId=uploads_playlist_id,
-                maxResults=10  # Get up to 10 recent videos
+                maxResults=1  # Only get the latest video for efficiency
             ).execute()
 
             if not response.get('items'):
